@@ -387,7 +387,7 @@
         }
 
 
-        // --- SETUP & CSV FUNCTIONS ---
+        // --- SETUP & ROBUSTER CSV PARSER ---
 
         function handleFileUpload(input) {
             const file = input.files[0];
@@ -402,31 +402,98 @@
         }
 
         function parseCSV(csvText) {
-            // Restore newlines that were escaped in export
-            csvText = csvText.replace(/\\n/g, '\n');
+            // Entferne potenzielles BOM (Byte Order Mark) am Anfang der Datei, was parseInt stören kann
+            if (csvText.charCodeAt(0) === 0xFEFF) {
+                csvText = csvText.slice(1);
+            }
 
-            const lines = csvText.split(/\r\n|\n/);
             const questions = [];
+            let rows = [];
+            
+            let row = [];
+            let currentVal = '';
+            let inQuotes = false;
+            
+            // Trennzeichen dynamisch ermitteln (Semikolon bevorzugt)
+            let delimiter = ';';
+            if (!csvText.includes(';') && csvText.includes(',')) delimiter = ',';
 
-            lines.forEach(line => {
-                if(line.trim() === '') return;
-                
-                // Flexible Trennung: Semikolon bevorzugt, Fallback auf Komma
-                let parts = line.split(';');
-                if (parts.length < 3) parts = line.split(',');
+            // Zeichen für Zeichen durchgehen, um Anführungszeichen (Excel-Umbrüche) richtig zu verarbeiten
+            for (let i = 0; i < csvText.length; i++) {
+                let char = csvText[i];
+                let nextChar = csvText[i+1];
 
-                // Validierung Header überspringen
-                if (parts[0].toLowerCase().includes('id') || parts[2]?.toLowerCase().includes('punkte') || parts[3]?.toLowerCase().includes('punkte')) return;
-
-                if (parts.length >= 3) {
-                    // Berücksichtigt auch noch alte CSV Formate mit Antworten (4 Spalten)
-                    let pointsStr = parts.length >= 4 ? parts[3] : parts[2];
-                    questions.push({
-                        id: parseInt(parts[0].trim()) || 0,
-                        text: parts[1].trim(),
-                        points: pointsStr ? parseFloat(pointsStr.trim().replace(',', '.')) : 1
-                    });
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        // Escaptes Anführungszeichen ("")
+                        currentVal += '"';
+                        i++; // Nächstes überspringen
+                    } else {
+                        // Zustand umschalten
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === delimiter && !inQuotes) {
+                    // Spalte zu Ende
+                    row.push(currentVal);
+                    currentVal = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    // Zeile zu Ende (nur wenn nicht innerhalb von Anführungszeichen)
+                    if (char === '\r' && nextChar === '\n') {
+                        i++; // \n überspringen
+                    }
+                    row.push(currentVal);
+                    // Leere Zeilen ignorieren
+                    if (row.some(val => val.trim() !== '')) {
+                        rows.push(row);
+                    }
+                    row = [];
+                    currentVal = '';
+                } else {
+                    currentVal += char;
                 }
+            }
+            
+            // Letzte Zeile (falls die Datei nicht mit einem Umbruch endet)
+            if (currentVal !== '' || row.length > 0) {
+                row.push(currentVal);
+                if (row.some(val => val.trim() !== '')) {
+                    rows.push(row);
+                }
+            }
+
+            // Nun die fertig aufgeteilten Zeilen in Fragen-Objekte wandeln
+            rows.forEach(parts => {
+                if (parts.length < 2) return; // Brauchen mindestens ID und Text
+                
+                // Versuche ID auszulesen. Wenn das fehlschlägt, ist es sehr wahrscheinlich die Kopfzeile
+                let id = parseInt(parts[0].trim());
+                if (isNaN(id)) return; 
+
+                // Text bereinigen (Abwärtskompatibilität für alte, unescaped Exporte dieser App mit \n)
+                let qText = parts[1].trim().replace(/\\n/g, '\n');
+                
+                let points = 1; // Standardwert
+                
+                if (parts.length >= 3) {
+                    // Suche die Punktzahl am Ende. 
+                    // Unterstützt neues Format (Spalte 3) und altes Format mit gelöschter Lösung (Spalte 4)
+                    let ptsStr = parts[parts.length - 1].trim();
+                    let parsedPoints = parseFloat(ptsStr.replace(',', '.'));
+                    
+                    if (!isNaN(parsedPoints)) {
+                        points = parsedPoints;
+                    } else if (parts.length >= 4) {
+                        // Fallback, falls die Tabelle noch 4 Spalten hatte und die Punkte in Spalte 3 standen
+                        let ptsFallback = parseFloat(parts[2].trim().replace(',', '.'));
+                        if (!isNaN(ptsFallback)) points = ptsFallback;
+                    }
+                }
+
+                questions.push({
+                    id: id,
+                    text: qText,
+                    points: points
+                });
             });
 
             allQuestions = questions;
@@ -650,11 +717,15 @@
             // Speichere erst aktuelle Eingaben
             saveAndCloseEditor(); 
             
-            let csvContent = "data:text/csv;charset=utf-8,ID;Frage;Punkte\n";
+            // BOM hinzufügen für bessere Excel-Kompatibilität bei Umlauten
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFFID;Frage;Punkte\n";
+            
             allQuestions.forEach(q => {
-                // Escape Semikolons.
-                // Replace real newlines with literal \n to keep CSV simple
-                const safeText = q.text.replace(/;/g, ",").replace(/\n/g, "\\n");
+                // Quotes maskieren (aus " wird "") und den ganzen Text in Quotes hüllen
+                // Dadurch wird garantiert, dass Semikolons und Zeilenumbrüche IM Text von Excel erkannt werden.
+                let safeText = q.text.replace(/"/g, '""');
+                safeText = `"${safeText}"`;
+                
                 csvContent += `${q.id};${safeText};${q.points}\n`;
             });
 
@@ -760,7 +831,9 @@
             document.getElementById('q-text').innerHTML = parseMarkdown(currentQuestion.text);
 
             document.getElementById('q-points').innerText = currentQuestion.points;
-            document.getElementById('pool-remaining').innerText = sessionQuestions.length;
+            
+            // +1, da die aktuelle Frage gedanklich noch zum Pool gehört, bis sie übersprungen oder abgeschlossen wird
+            document.getElementById('pool-remaining').innerText = sessionQuestions.length + 1;
 
             // MathJax re-render trigger für dynamischen Content
             if (window.MathJax) {

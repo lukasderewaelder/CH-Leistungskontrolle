@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mündliche Prüfung - Assistent</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- MathJax für Formeln -->
@@ -16,31 +16,60 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        /* Scrollbar für Editor Tabelle */
+        
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { bg-slate-100; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Listen-Styles für Markdown Rendering */
         .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
         .prose li { padding-left: 0.25rem; }
         .prose strong { font-weight: 700; color: #1e293b; }
 
-        /* Drag & Drop Styles */
         tr.dragging { opacity: 0.5; background-color: #f1f5f9; }
         tr.over { border-bottom: 2px solid #6366f1; }
         .cursor-grab { cursor: grab; }
         .cursor-grab:active { cursor: grabbing; }
+
+        /* PRINT STYLES FÜR EXAKT EINE A4 SEITE */
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+            body { 
+                background-color: white !important; 
+                font-size: 10pt; 
+                overflow: visible; 
+                height: auto;
+            }
+            .print\:hidden { display: none !important; }
+            .print\:block { display: block !important; }
+            .print\:flex { display: flex !important; }
+            
+            #print-area { 
+                position: absolute; left: 0; top: 0; width: 100%; 
+                max-height: 277mm; /* Zwingt alles auf eine Seite */
+                overflow: hidden; 
+            }
+            
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #000; padding: 4px 6px; text-align: left; }
+            th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
+            
+            /* Komprimiert Markdown Listen im Print */
+            .print-prose p { display: inline; margin: 0; padding: 0; }
+            .print-prose ul { margin: 0; padding-left: 1rem; }
+            
+            /* Verhindert Seitenumbrüche in Reihen */
+            tr { page-break-inside: avoid; }
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 h-screen w-screen flex flex-col relative">
 
     <!-- HEADER -->
-    <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm z-10">
+    <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm z-10 print:hidden flex-shrink-0">
         <div class="flex items-center gap-2">
             <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
             <h1 class="font-bold text-xl text-slate-700">Prüfungs-Assistent</h1>
@@ -49,11 +78,10 @@
     </header>
 
     <!-- MAIN CONTENT AREA -->
-    <main class="flex-grow p-6 overflow-y-auto relative custom-scrollbar">
+    <main class="flex-grow p-4 md:p-6 overflow-y-auto relative custom-scrollbar print:hidden flex flex-col">
         
-        <!-- SECTION 1: SETUP & CONFIG (Visible initially) -->
-        <div id="setup-section" class="max-w-4xl mx-auto space-y-8 fade-in">
-            
+        <!-- SECTION 1: SETUP & CONFIG -->
+        <div id="setup-section" class="max-w-4xl w-full mx-auto space-y-6 fade-in flex-shrink-0">
             <!-- Upload Card -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -84,7 +112,6 @@
                         <div class="flex items-center gap-2 mb-2">
                              <svg class="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
-                       
                         <span><span id="question-count">0</span> Fragen bereit.</span>
                         <span class="text-xs text-slate-400 mt-1 font-normal">(Im Browser gespeichert)</span>
                     </div>
@@ -99,7 +126,6 @@
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Filter ID -->
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1">Fragen-ID Bereich</label>
                         <div class="flex gap-2 items-center">
@@ -109,8 +135,6 @@
                         </div>
                         <p class="text-xs text-slate-400 mt-1">Leer lassen für alle Fragen.</p>
                     </div>
-
-                    <!-- Exclude IDs -->
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1">Ausschluss (IDs)</label>
                         <input type="text" id="exclude-ids" placeholder="z.B. 3, 7, 20-25" class="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700">
@@ -119,18 +143,18 @@
                 </div>
 
                 <div class="mt-8 pt-4 border-t border-slate-100 flex justify-end">
-                    <button onclick="startExam()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition-transform active:scale-95 flex items-center gap-2">
+                    <button onclick="startExam()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2 text-lg w-full md:w-auto justify-center">
                         Prüfung starten
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- SECTION 1.5: EDITOR MODE (Hidden initially) -->
-        <div id="editor-section" class="hidden max-w-7xl mx-auto h-full flex flex-col fade-in">
-            <div class="bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col h-[80vh]">
-                <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+        <!-- SECTION 1.5: EDITOR MODE (Hidden) -->
+        <div id="editor-section" class="hidden max-w-7xl w-full mx-auto h-full flex flex-col fade-in flex-grow">
+            <div class="bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col flex-grow overflow-hidden">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 flex-shrink-0">
                     <h2 class="font-bold text-lg text-slate-700">Fragenpool bearbeiten</h2>
                     <div class="flex gap-2">
                          <button onclick="exportCSV()" class="text-sm bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1">
@@ -144,22 +168,20 @@
                 </div>
                 
                 <div class="flex-grow overflow-auto custom-scrollbar p-4">
-                    <table class="w-full text-sm text-left text-slate-500">
-                        <thead class="text-xs text-slate-700 uppercase bg-slate-100 sticky top-0 z-10">
+                    <table class="w-full text-sm text-left text-slate-500 border-collapse">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-100 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th scope="col" class="px-3 py-3 w-8"></th>
-                                <th scope="col" class="px-3 py-3 w-16">ID</th>
-                                <th scope="col" class="px-3 py-3">Frage (LaTeX mit $)</th>
-                                <th scope="col" class="px-3 py-3 w-20">Pkt.</th>
-                                <th scope="col" class="px-3 py-3 w-10"></th>
+                                <th class="px-3 py-3 w-8"></th>
+                                <th class="px-3 py-3 w-16">ID</th>
+                                <th class="px-3 py-3">Frage (LaTeX mit $)</th>
+                                <th class="px-3 py-3 w-20">Max. Pkt.</th>
+                                <th class="px-3 py-3 w-10"></th>
                             </tr>
                         </thead>
-                        <tbody id="editor-table-body">
-                            <!-- Rows via JS -->
-                        </tbody>
+                        <tbody id="editor-table-body"></tbody>
                     </table>
-                    <button onclick="addEditorRow()" class="mt-4 w-full py-2 border-2 border-dashed border-slate-300 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 rounded-lg transition-colors flex justify-center items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <button onclick="addEditorRow()" class="mt-4 w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 rounded-lg transition-colors flex justify-center items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         Neue Frage hinzufügen
                     </button>
                 </div>
@@ -167,103 +189,87 @@
         </div>
 
 
-        <!-- SECTION 2: EXAM MODE (Hidden initially) -->
-        <div id="exam-section" class="hidden max-w-6xl mx-auto h-full flex flex-col fade-in">
+        <!-- SECTION 2: EXAM MODE (Responsive Full Height) -->
+        <div id="exam-section" class="hidden w-full h-full flex flex-col fade-in">
             
-            <!-- Progress Dashboard -->
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <!-- Question Counter -->
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden">
-                    <div class="flex justify-between items-end relative z-10">
-                        <div>
-                            <p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Gestellte Fragen</p>
-                            <p class="text-2xl font-bold text-slate-800"><span id="display-q-count">0</span> / 5<span class="text-xs font-normal text-slate-400 ml-1">(Min)</span></p>
-                        </div>
-                        <div id="status-icon-q" class="text-slate-300">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        </div>
+            <!-- Progress Dashboard (Top Bar) -->
+            <div class="grid grid-cols-2 gap-4 mb-4 flex-shrink-0">
+                <div class="bg-white p-3 md:p-4 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Gestellte Fragen</p>
+                        <p class="text-xl md:text-2xl font-bold text-slate-800"><span id="display-q-count">0</span> <span class="text-sm font-normal text-slate-400">/ 5 (Min)</span></p>
                     </div>
-                    <!-- Progress Bar Background -->
                     <div class="absolute bottom-0 left-0 h-1 bg-slate-100 w-full">
                         <div id="progress-bar-q" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
                     </div>
                 </div>
 
-                <!-- Points Counter -->
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden">
-                    <div class="flex justify-between items-end relative z-10">
-                        <div>
-                            <p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Erreichte Punkte</p>
-                            <p class="text-2xl font-bold text-slate-800"><span id="display-points">0</span> / 12<span class="text-xs font-normal text-slate-400 ml-1">(Min)</span></p>
-                        </div>
-                        <div id="status-icon-p" class="text-slate-300">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        </div>
+                <div class="bg-white p-3 md:p-4 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Erreichte max. Punkte</p>
+                        <p class="text-xl md:text-2xl font-bold text-slate-800"><span id="display-points">0</span> <span class="text-sm font-normal text-slate-400">/ 12 (Min)</span></p>
                     </div>
-                     <!-- Progress Bar Background -->
                      <div class="absolute bottom-0 left-0 h-1 bg-slate-100 w-full">
                         <div id="progress-bar-p" class="h-full bg-orange-500 transition-all duration-500" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Card Container -->
-            <div class="flex-grow flex flex-col gap-4">
+            <!-- BIG QUESTION CARD (Flex Grow to fill available screen) -->
+            <div class="bg-white rounded-xl shadow-lg border-l-4 border-indigo-500 p-4 md:p-8 relative flex-grow flex flex-col overflow-hidden mb-4">
                 
-                <!-- Question Card -->
-                <div class="bg-white rounded-xl shadow-md border-l-4 border-indigo-500 p-8 relative flex-grow flex flex-col justify-center min-h-[200px]">
-                    <div class="absolute top-4 left-4 flex gap-2">
-                        <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono border border-slate-200">ID: <span id="q-id">--</span></span>
-                        <span class="bg-slate-50 text-slate-400 px-2 py-1 rounded text-xs border border-slate-100" title="Verbleibende Fragen im Pool">Pool: <span id="pool-remaining">?</span></span>
+                <div class="flex justify-between items-start w-full flex-shrink-0 mb-2 z-10">
+                    <div class="flex gap-2">
+                        <span class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-md text-sm font-mono font-bold shadow-sm border border-slate-200">ID: <span id="q-id">--</span></span>
+                        <span class="bg-slate-50 text-slate-400 px-3 py-1.5 rounded-md text-sm border border-slate-100" title="Verbleibende Fragen im Pool">Pool: <span id="pool-remaining">?</span></span>
                     </div>
-                    
-                    <span class="absolute top-4 right-4 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold border border-indigo-100"><span id="q-points">0</span> Punkte</span>
-                    
-                    <div class="text-2xl md:text-3xl font-medium text-slate-800 leading-relaxed text-center my-4 prose max-w-none" id="q-text">
+                    <span class="bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-100 shadow-sm"><span id="q-points">0</span> Max. Pkt.</span>
+                </div>
+                
+                <!-- DYNAMIC TEXT CONTAINER -->
+                <div class="flex-grow w-full flex flex-col items-center justify-center overflow-hidden relative" id="q-text-wrapper">
+                    <!-- Das q-text Element wird via JS dynamisch skaliert -->
+                    <div id="q-text" class="text-center font-medium leading-relaxed prose max-w-none w-full text-slate-800" style="transition: font-size 0.05s ease-out;">
                         Frage wird geladen...
                     </div>
                 </div>
-
             </div>
 
             <!-- Controls Footer -->
-            <div class="mt-6 flex justify-end items-center bg-white p-4 rounded-xl shadow-lg border border-slate-100">
-                <div class="flex gap-2">
-                    <button id="btn-skip" onclick="skipQuestion()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-3 rounded-lg font-medium shadow-sm border border-slate-200 flex items-center gap-2 transition-transform active:scale-95">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
-                        <span>Überspringen</span>
-                    </button>
+            <div class="flex justify-end items-center bg-white p-4 rounded-xl shadow-md border border-slate-200 flex-shrink-0 gap-3">
+                <button id="btn-skip" onclick="skipQuestion()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-4 md:py-3 rounded-lg font-bold shadow-sm border border-slate-200 flex items-center gap-2 transition-transform active:scale-95 text-sm md:text-base">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                    <span>Überspringen</span>
+                </button>
 
-                    <button id="btn-next" onclick="nextQuestion()" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg font-semibold shadow-lg flex items-center gap-2 transition-transform active:scale-95">
-                        <span>Nächste Frage</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-                    </button>
-                    
-                    <button id="btn-finish" onclick="finishExam()" class="hidden bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg flex items-center gap-2 transition-transform active:scale-95 animate-pulse">
-                        <span>Prüfung beenden</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    </button>
-                </div>
+                <button id="btn-next" onclick="nextQuestion()" class="bg-slate-800 hover:bg-slate-900 text-white px-8 py-4 md:py-3 rounded-lg font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95 text-sm md:text-base">
+                    <span>Nächste Frage</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </button>
+                
+                <button id="btn-finish" onclick="finishExam()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 md:py-3 rounded-lg font-bold shadow-lg items-center gap-2 transition-transform active:scale-95 animate-pulse text-sm md:text-base w-full md:w-auto justify-center">
+                    <span>Prüfung beenden</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </button>
             </div>
 
         </div>
 
-        <!-- FINISH SECTION (Adaptive Grid for iPad/Landscape) -->
-        <div id="finish-section" class="hidden h-full flex flex-col items-center fade-in pb-10">
-            
+        <!-- FINISH SECTION (Screen View) -->
+        <div id="finish-section" class="hidden h-full flex flex-col items-center fade-in pb-10 overflow-y-auto w-full">
             <div class="max-w-6xl w-full mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
-                <!-- Left Column: Summary Card (Sticky on Large Screens) -->
+                <!-- Left Column: Summary Card -->
                 <div class="lg:col-span-4 lg:sticky lg:top-4 bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center">
                     <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                         <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <h2 class="text-3xl font-bold text-slate-800 mb-2">Prüfung beendet</h2>
-                    <p class="text-slate-500 mb-8">Alle Anforderungen wurden erfüllt.</p>
+                    <p class="text-slate-500 mb-6">Alle Anforderungen wurden erfüllt.</p>
                     
-                    <div class="bg-slate-50 rounded-lg p-6 mb-8 text-left">
+                    <div class="bg-slate-50 rounded-lg p-6 mb-6 text-left">
                         <div class="flex justify-between mb-2 border-b border-slate-200 pb-2">
-                            <span class="text-slate-600">Gesamtpunkte:</span>
+                            <span class="text-slate-600">Gesamtpunkte (Max):</span>
                             <span class="font-bold text-slate-800 text-xl" id="final-points">0</span>
                         </div>
                         <div class="flex justify-between">
@@ -272,7 +278,21 @@
                         </div>
                     </div>
 
-                    <button onclick="location.reload()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700">
+                    <!-- Schülereingabe -->
+                    <div class="mb-6 text-left">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Name des Schülers / der Schülerin</label>
+                        <input type="text" id="input-student-name" placeholder="Max Mustermann" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500 outline-none mb-3 border-slate-300">
+                        
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Klasse / Kurs</label>
+                        <input type="text" id="input-student-class" placeholder="z.B. Bio-LK 12" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border-slate-300">
+                    </div>
+
+                    <button onclick="triggerPrint()" class="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-900 mb-3 flex justify-center items-center gap-2 shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Protokoll als PDF drucken
+                    </button>
+
+                    <button onclick="location.reload()" class="w-full bg-indigo-100 text-indigo-700 py-3 rounded-lg font-semibold hover:bg-indigo-200">
                         Neue Prüfung starten
                     </button>
                 </div>
@@ -281,7 +301,7 @@
                 <div class="lg:col-span-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
                      <h3 class="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2 pb-4 border-b border-slate-100">
                         <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        Übersicht der gestellten Fragen
+                        Ansicht der gestellten Fragen
                     </h3>
                     <div id="history-list" class="space-y-4">
                         <!-- History Items injected via JS -->
@@ -293,18 +313,94 @@
 
     </main>
 
+    <!-- PRINT LAYOUT (Nur beim Drucken/PDF-Export sichtbar. Passt auf exakt 1x A4 Seite) -->
+    <div id="print-area" class="hidden print:block w-full text-black bg-white">
+        <!-- Header -->
+        <div class="flex justify-between items-end border-b-2 border-black pb-2 mb-4">
+            <h1 class="text-xl font-bold uppercase tracking-wider">Prüfungsprotokoll (Mündlich)</h1>
+            <div class="text-xs text-gray-700">Export: <span id="print-datetime" class="font-semibold"></span></div>
+        </div>
+
+        <!-- Student Details -->
+        <table class="w-full mb-4 text-sm border-none" style="margin-bottom: 20px;">
+            <tr>
+                <td class="pb-4 w-1/2 align-bottom border-none relative">
+                    <span class="mr-2">Name, Vorname:</span>
+                    <span id="print-student-name" class="font-semibold text-base absolute bottom-4"></span>
+                    <div class="border-b border-black mt-2 w-11/12 h-4"></div>
+                </td>
+                <td class="pb-4 w-1/2 align-bottom border-none relative">
+                    <span class="mr-2">Klasse / Kurs:</span>
+                    <span id="print-student-class" class="font-semibold text-base absolute bottom-4"></span>
+                    <div class="border-b border-black mt-2 w-11/12 h-4"></div>
+                </td>
+            </tr>
+            <tr>
+                <td class="pb-2 align-bottom border-none">Prüfungsdatum: <div class="border-b border-black mt-2 w-11/12 h-4"></div></td>
+                <td class="pb-2 align-bottom border-none font-bold text-base">Erreichte Punkte: <div class="border-b-2 border-black mt-2 w-11/12 h-4"></div></td>
+            </tr>
+        </table>
+
+        <!-- Exam Questions Table -->
+        <h2 class="text-base font-bold mb-1">Gestellte Aufgaben</h2>
+        <table class="w-full border-collapse border border-black text-xs mb-4">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="border border-black p-1 w-10 text-center">ID</th>
+                    <th class="border border-black p-1">Aufgabenstellung</th>
+                    <th class="border border-black p-1 w-16 text-center leading-tight">Max.<br>Pkt.</th>
+                    <th class="border border-black p-1 w-20 text-center text-gray-500 italic">Punkte<br>(manuell)</th>
+                </tr>
+            </thead>
+            <tbody id="print-questions-tbody">
+            </tbody>
+            <tfoot>
+                <tr class="bg-gray-50 font-bold">
+                    <td colspan="2" class="border border-black p-1 text-right uppercase">Summe Maximalpunkte:</td>
+                    <td id="print-sum-max" class="border border-black p-1 text-center text-sm">0</td>
+                    <td class="border border-black p-1 bg-white"></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Bottom Row: Grading & Skipped -->
+        <div class="flex gap-6 mt-auto">
+            <!-- Grading Table -->
+            <div class="w-5/12">
+                <h2 class="text-sm font-bold mb-1">Notenschlüssel</h2>
+                <table class="w-full border-collapse border border-black text-xs">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black p-1 text-left">Note</th>
+                            <th class="border border-black p-1 text-center w-16">Prozent</th>
+                            <th class="border border-black p-1 text-center w-24">ab Punkten</th>
+                        </tr>
+                    </thead>
+                    <tbody id="print-grading-tbody">
+                    </tbody>
+                </table>
+                <p class="text-[10px] text-gray-500 mt-1 italic">*Punkte auf die nächste ganze Zahl aufgerundet.</p>
+            </div>
+
+            <!-- Skipped -->
+            <div class="w-7/12">
+                <h2 class="text-sm font-bold mb-1 text-gray-700">Übersprungene Aufgaben</h2>
+                <div id="print-skipped-list" class="text-xs text-gray-600 space-y-1">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- STATE MANAGEMENT ---
         let allQuestions = [];
         let sessionQuestions = [];
-        let history = []; // Speichert gestellte Fragen
+        let history = []; 
+        let skippedHistory = [];
         let currentQuestion = null;
-        let dragSrcEl = null; // Drag & Drop Source
+        let dragSrcEl = null; 
         
-        let stats = {
-            points: 0,
-            questions: 0
-        };
+        let stats = { points: 0, questions: 0 };
 
         const MIN_POINTS = 12;
         const MIN_QUESTIONS = 5;
@@ -313,17 +409,53 @@
         // --- INIT ---
         document.addEventListener('DOMContentLoaded', () => {
             loadFromStorage();
+            // Resize Event Listener für dynamische Schriftgröße
+            window.addEventListener('resize', resizeFont);
         });
 
-        // --- STORAGE FUNCTIONS ---
-
-        function saveToStorage() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(allQuestions));
-            } catch (e) {
-                console.error("Fehler beim Speichern:", e);
-                alert("Fehler: Speicherplatz voll oder deaktiviert.");
+        // --- KRYPTOGRAFISCH SICHERER ZUFALLSGENERATOR (Fisher-Yates) ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const randomBuffer = new Uint32Array(1);
+                window.crypto.getRandomValues(randomBuffer);
+                const j = randomBuffer[0] % (i + 1);
+                [array[i], array[j]] = [array[j], array[i]];
             }
+        }
+
+        // --- DYNAMISCHE SCHRIFTGRÖSSE FÜR RESPONSIVE ANSICHT ---
+        function resizeFont() {
+            const wrapper = document.getElementById('q-text-wrapper');
+            const textEl = document.getElementById('q-text');
+            if (!wrapper || !textEl || textEl.innerHTML === '' || document.getElementById('exam-section').classList.contains('hidden')) return;
+
+            // Reset bounds for measurement
+            textEl.style.fontSize = '16px';
+            
+            let min = 16;
+            let max = 80; // Maximale Schriftgröße in px
+            let best = min;
+            
+            // Binäre Suche für die optimale Schriftgröße, damit es genau in den Container passt
+            while (min <= max) {
+                let mid = Math.floor((min + max) / 2);
+                textEl.style.fontSize = mid + 'px';
+                
+                // Prüfen, ob der Text den Container sprengt (mit kleinem Puffer)
+                if (textEl.scrollHeight <= wrapper.clientHeight - 20 && textEl.scrollWidth <= wrapper.clientWidth - 20) {
+                    best = mid;
+                    min = mid + 1; // Kann größer sein?
+                } else {
+                    max = mid - 1; // Zu groß, muss kleiner sein
+                }
+            }
+            textEl.style.fontSize = best + 'px';
+        }
+
+        // --- STORAGE FUNCTIONS ---
+        function saveToStorage() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allQuestions)); } 
+            catch (e) { console.error("Fehler beim Speichern:", e); }
         }
 
         function loadFromStorage() {
@@ -331,12 +463,8 @@
             if (stored) {
                 try {
                     allQuestions = JSON.parse(stored);
-                    if (allQuestions.length > 0) {
-                        updateSetupUI();
-                    }
-                } catch (e) {
-                    console.error("Fehler beim Laden:", e);
-                }
+                    if (allQuestions.length > 0) updateSetupUI();
+                } catch (e) { console.error("Fehler beim Laden:", e); }
             }
         }
 
@@ -350,154 +478,95 @@
         // --- HELPER: MARKDOWN PARSER (SIMPLE) ---
         function parseMarkdown(text) {
             if (!text) return '';
-            // Basic HTML escape
             let safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
-            // Bold (**text**)
             safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             
-            // Lists (- item)
-            // We split by newline to handle lists line-by-line
             let lines = safe.split('\n');
             let html = '';
             let inList = false;
 
             lines.forEach(line => {
                 let trimmed = line.trim();
-                // Check for list item (starts with - or *)
                 if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                    if (!inList) {
-                        html += '<ul>';
-                        inList = true;
-                    }
+                    if (!inList) { html += '<ul>'; inList = true; }
                     html += `<li>${trimmed.substring(2)}</li>`;
                 } else {
-                    if (inList) {
-                        html += '</ul>';
-                        inList = false;
-                    }
-                    if (trimmed.length > 0) {
-                         html += line + '<br>';
-                    }
+                    if (inList) { html += '</ul>'; inList = false; }
+                    if (trimmed.length > 0) html += line + '<br>';
                 }
             });
             if (inList) html += '</ul>';
-            
             return html;
         }
 
-
         // --- SETUP & ROBUSTER CSV PARSER ---
-
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                parseCSV(text);
-            };
+            reader.onload = function(e) { parseCSV(e.target.result); };
             reader.readAsText(file);
         }
 
         function parseCSV(csvText) {
-            // Entferne potenzielles BOM (Byte Order Mark) am Anfang der Datei, was parseInt stören kann
-            if (csvText.charCodeAt(0) === 0xFEFF) {
-                csvText = csvText.slice(1);
-            }
-
+            if (csvText.charCodeAt(0) === 0xFEFF) csvText = csvText.slice(1);
             const questions = [];
             let rows = [];
-            
             let row = [];
             let currentVal = '';
             let inQuotes = false;
             
-            // Trennzeichen dynamisch ermitteln (Semikolon bevorzugt)
             let delimiter = ';';
             if (!csvText.includes(';') && csvText.includes(',')) delimiter = ',';
 
-            // Zeichen für Zeichen durchgehen, um Anführungszeichen (Excel-Umbrüche) richtig zu verarbeiten
             for (let i = 0; i < csvText.length; i++) {
                 let char = csvText[i];
                 let nextChar = csvText[i+1];
 
                 if (char === '"') {
                     if (inQuotes && nextChar === '"') {
-                        // Escaptes Anführungszeichen ("")
-                        currentVal += '"';
-                        i++; // Nächstes überspringen
+                        currentVal += '"'; i++;
                     } else {
-                        // Zustand umschalten
                         inQuotes = !inQuotes;
                     }
                 } else if (char === delimiter && !inQuotes) {
-                    // Spalte zu Ende
-                    row.push(currentVal);
-                    currentVal = '';
+                    row.push(currentVal); currentVal = '';
                 } else if ((char === '\n' || char === '\r') && !inQuotes) {
-                    // Zeile zu Ende (nur wenn nicht innerhalb von Anführungszeichen)
-                    if (char === '\r' && nextChar === '\n') {
-                        i++; // \n überspringen
-                    }
+                    if (char === '\r' && nextChar === '\n') i++;
                     row.push(currentVal);
-                    // Leere Zeilen ignorieren
-                    if (row.some(val => val.trim() !== '')) {
-                        rows.push(row);
-                    }
-                    row = [];
-                    currentVal = '';
+                    if (row.some(val => val.trim() !== '')) rows.push(row);
+                    row = []; currentVal = '';
                 } else {
                     currentVal += char;
                 }
             }
-            
-            // Letzte Zeile (falls die Datei nicht mit einem Umbruch endet)
             if (currentVal !== '' || row.length > 0) {
                 row.push(currentVal);
-                if (row.some(val => val.trim() !== '')) {
-                    rows.push(row);
-                }
+                if (row.some(val => val.trim() !== '')) rows.push(row);
             }
 
-            // Nun die fertig aufgeteilten Zeilen in Fragen-Objekte wandeln
             rows.forEach(parts => {
-                if (parts.length < 2) return; // Brauchen mindestens ID und Text
-                
-                // Versuche ID auszulesen. Wenn das fehlschlägt, ist es sehr wahrscheinlich die Kopfzeile
+                if (parts.length < 2) return; 
                 let id = parseInt(parts[0].trim());
                 if (isNaN(id)) return; 
 
-                // Text bereinigen (Abwärtskompatibilität für alte, unescaped Exporte dieser App mit \n)
                 let qText = parts[1].trim().replace(/\\n/g, '\n');
-                
-                let points = 1; // Standardwert
+                let points = 1; 
                 
                 if (parts.length >= 3) {
-                    // Suche die Punktzahl am Ende. 
-                    // Unterstützt neues Format (Spalte 3) und altes Format mit gelöschter Lösung (Spalte 4)
                     let ptsStr = parts[parts.length - 1].trim();
                     let parsedPoints = parseFloat(ptsStr.replace(',', '.'));
-                    
-                    if (!isNaN(parsedPoints)) {
-                        points = parsedPoints;
-                    } else if (parts.length >= 4) {
-                        // Fallback, falls die Tabelle noch 4 Spalten hatte und die Punkte in Spalte 3 standen
+                    if (!isNaN(parsedPoints)) points = parsedPoints;
+                    else if (parts.length >= 4) {
                         let ptsFallback = parseFloat(parts[2].trim().replace(',', '.'));
                         if (!isNaN(ptsFallback)) points = ptsFallback;
                     }
                 }
-
-                questions.push({
-                    id: id,
-                    text: qText,
-                    points: points
-                });
+                questions.push({ id: id, text: qText, points: points });
             });
 
             allQuestions = questions;
-            saveToStorage(); // Speichern!
+            saveToStorage(); 
             updateSetupUI();
         }
 
@@ -516,7 +585,6 @@
         }
 
         // --- EDITOR FUNCTIONS ---
-
         function openEditor() {
             document.getElementById('setup-section').classList.add('hidden');
             document.getElementById('editor-section').classList.remove('hidden');
@@ -526,24 +594,16 @@
         function renderEditorRows() {
             const tbody = document.getElementById('editor-table-body');
             tbody.innerHTML = '';
-
-            // Wenn leer, füge eine leere Zeile hinzu
-            if (allQuestions.length === 0) {
-                addEditorRow();
-                return;
-            }
+            if (allQuestions.length === 0) { addEditorRow(); return; }
 
             allQuestions.forEach((q, index) => {
                 const row = document.createElement('tr');
                 row.className = 'bg-white border-b hover:bg-slate-50 transition-colors align-top';
-                
-                // DRAG LOGIC: Initially NOT draggable
                 row.addEventListener('dragstart', handleDragStart);
                 row.addEventListener('dragover', handleDragOver);
                 row.addEventListener('drop', handleDrop);
                 row.addEventListener('dragend', handleDragEnd);
 
-                // Using Textareas for Multi-line support
                 row.innerHTML = `
                     <td class="px-3 py-2 text-center cursor-grab text-slate-300 hover:text-indigo-500 pt-3" title="Verschieben (Gedrückt halten)">
                         <svg class="w-5 h-5 mx-auto pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -559,7 +619,6 @@
                 `;
                 tbody.appendChild(row);
                 
-                // Add Handle Logic
                 const handle = row.querySelector('.cursor-grab');
                 handle.addEventListener('mousedown', () => {
                     row.setAttribute('draggable', 'true');
@@ -576,7 +635,6 @@
             const tbody = document.getElementById('editor-table-body');
             const row = document.createElement('tr');
             
-            // Auto-Increment ID Logik
             let nextId = 1;
             if (tbody.children.length > 0) {
                 const lastIdInput = tbody.lastElementChild.querySelector('input[type="number"]');
@@ -586,7 +644,6 @@
             }
 
             row.className = 'bg-white border-b hover:bg-slate-50 transition-colors fade-in align-top';
-            // DRAG LOGIC
             row.addEventListener('dragstart', handleDragStart);
             row.addEventListener('dragover', handleDragOver);
             row.addEventListener('drop', handleDrop);
@@ -607,7 +664,6 @@
             `;
             tbody.appendChild(row);
             
-            // Add Handle Logic
             const handle = row.querySelector('.cursor-grab');
             handle.addEventListener('mousedown', () => {
                 row.setAttribute('draggable', 'true');
@@ -621,47 +677,25 @@
             row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-        // --- DRAG & DROP HANDLERS ---
-        
         function handleDragStart(e) {
-            // Drag only starts if set to true (via mousedown on handle)
-            if (this.getAttribute('draggable') !== 'true') {
-                e.preventDefault();
-                return false;
-            }
+            if (this.getAttribute('draggable') !== 'true') { e.preventDefault(); return false; }
             dragSrcEl = this;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/html', this.innerHTML);
             this.classList.add('dragging');
         }
 
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
+        function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
 
         function handleDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
+            if (e.stopPropagation) e.stopPropagation();
             if (dragSrcEl !== this) {
-                // Determine direction
                 const tbody = document.getElementById('editor-table-body');
                 const rows = Array.from(tbody.querySelectorAll('tr'));
                 const oldIndex = rows.indexOf(dragSrcEl);
                 const newIndex = rows.indexOf(this);
-                
-                // Move element in DOM (preserving input values implicitly by moving node)
-                if (oldIndex < newIndex) {
-                    this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
-                } else {
-                    this.parentNode.insertBefore(dragSrcEl, this);
-                }
-                
-                // Renumber IDs
+                if (oldIndex < newIndex) this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+                else this.parentNode.insertBefore(dragSrcEl, this);
                 recalculateIds();
             }
             return false;
@@ -669,33 +703,22 @@
 
         function handleDragEnd(e) {
             this.classList.remove('dragging');
-            this.setAttribute('draggable', 'false'); // Reset Draggable State
+            this.setAttribute('draggable', 'false'); 
         }
 
         function recalculateIds() {
-            const tbody = document.getElementById('editor-table-body');
-            const rows = tbody.querySelectorAll('tr');
-            rows.forEach((row, index) => {
+            document.getElementById('editor-table-body').querySelectorAll('tr').forEach((row, index) => {
                 const idInput = row.querySelector('input[type="number"]'); 
-                if(idInput) {
-                    idInput.value = index + 1;
-                }
+                if(idInput) idInput.value = index + 1;
             });
         }
 
-        function deleteEditorRow(btn) {
-            const row = btn.closest('tr');
-            row.remove();
-        }
+        function deleteEditorRow(btn) { btn.closest('tr').remove(); }
 
         function saveAndCloseEditor() {
-            const tbody = document.getElementById('editor-table-body');
             const newQuestions = [];
-            
-            tbody.querySelectorAll('tr').forEach(row => {
-                const inputs = row.querySelectorAll('input, textarea'); // Select Textareas too
-                // Basic Validation: Frage muss Text haben. 
-                // Index 0: ID, 1: Text(TA), 2: Points
+            document.getElementById('editor-table-body').querySelectorAll('tr').forEach(row => {
+                const inputs = row.querySelectorAll('input, textarea'); 
                 if (inputs[1].value.trim() !== "") {
                     newQuestions.push({
                         id: parseInt(inputs[0].value) || 0,
@@ -704,31 +727,21 @@
                     });
                 }
             });
-
             allQuestions = newQuestions;
-            saveToStorage(); // Speichern!
+            saveToStorage(); 
             updateSetupUI();
-            
             document.getElementById('editor-section').classList.add('hidden');
             document.getElementById('setup-section').classList.remove('hidden');
         }
 
         function exportCSV() {
-            // Speichere erst aktuelle Eingaben
             saveAndCloseEditor(); 
-            
-            // BOM hinzufügen für bessere Excel-Kompatibilität bei Umlauten
             let csvContent = "data:text/csv;charset=utf-8,\uFEFFID;Frage;Punkte\n";
-            
             allQuestions.forEach(q => {
-                // Quotes maskieren (aus " wird "") und den ganzen Text in Quotes hüllen
-                // Dadurch wird garantiert, dass Semikolons und Zeilenumbrüche IM Text von Excel erkannt werden.
                 let safeText = q.text.replace(/"/g, '""');
                 safeText = `"${safeText}"`;
-                
                 csvContent += `${q.id};${safeText};${q.points}\n`;
             });
-
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -736,19 +749,15 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
-            // Re-open Editor if user wants to continue there
             openEditor();
         }
 
         // --- EXAM LOGIC ---
-
         function startExam() {
             const minId = parseInt(document.getElementById('min-id').value) || -999999;
             const maxId = parseInt(document.getElementById('max-id').value) || 999999;
             const excludeInput = document.getElementById('exclude-ids').value;
 
-            // Parse Exclusions
             const excludedIds = new Set();
             if (excludeInput) {
                 const parts = excludeInput.split(',');
@@ -769,17 +778,19 @@
             }
             
             sessionQuestions = allQuestions.filter(q => {
-                const inRange = q.id >= minId && q.id <= maxId;
-                const notExcluded = !excludedIds.has(q.id);
-                return inRange && notExcluded;
+                return (q.id >= minId && q.id <= maxId) && !excludedIds.has(q.id);
             });
-
-            history = []; // Reset history
 
             if (sessionQuestions.length === 0) {
                 alert("Keine Fragen im gewählten Bereich gefunden!");
                 return;
             }
+
+            // Neues System: Einmal komplett (echter Random) mischen
+            shuffleArray(sessionQuestions);
+
+            history = []; 
+            skippedHistory = []; 
 
             document.getElementById('setup-section').classList.add('hidden');
             document.getElementById('exam-section').classList.remove('hidden');
@@ -788,11 +799,10 @@
         }
 
         function nextQuestion(isFirst = false) {
-            // Historisierung und Scoring der VORHERIGEN Frage
             if (!isFirst && currentQuestion) {
                 stats.points += currentQuestion.points;
                 stats.questions++;
-                history.push(currentQuestion); // Zur Historie hinzufügen
+                history.push(currentQuestion); 
                 updateStatsUI();
             }
 
@@ -801,49 +811,39 @@
                 finishExam();
                 return;
             }
-
             checkFinishCondition();
 
-            // ZUFALLSGENERATOR: Ziehen ohne Zurücklegen
-            const randomIndex = Math.floor(Math.random() * sessionQuestions.length);
-            currentQuestion = sessionQuestions[randomIndex];
-            sessionQuestions.splice(randomIndex, 1); // Entferne gezogene Frage
-
+            // Einfach das letzte Element nehmen (Array wurde ja vorher gemischt)
+            currentQuestion = sessionQuestions.pop();
             renderQuestion();
         }
 
         function skipQuestion() {
-            // Die aktuelle Frage wird NICHT gewertet (keine Punkte, kein History-Eintrag)
-            // Sie wird zurück in den Pool gelegt, falls wir sie später noch brauchen 
-            // (verhindert, dass der Pool leer läuft bei vielen Skips).
             if (currentQuestion) {
-                sessionQuestions.push(currentQuestion);
+                skippedHistory.push(currentQuestion); 
+                sessionQuestions.unshift(currentQuestion); // An den Anfang des Arrays zurücklegen
             }
-            
-            // Nächste Frage ziehen, als wäre es die Erste (also kein Scoring der vorherigen)
             nextQuestion(true);
         }
 
         function renderQuestion() {
             document.getElementById('q-id').innerText = currentQuestion.id;
-            
-            // USE PARSER instead of innerText
             document.getElementById('q-text').innerHTML = parseMarkdown(currentQuestion.text);
-
             document.getElementById('q-points').innerText = currentQuestion.points;
-            
-            // +1, da die aktuelle Frage gedanklich noch zum Pool gehört, bis sie übersprungen oder abgeschlossen wird
             document.getElementById('pool-remaining').innerText = sessionQuestions.length + 1;
 
-            // MathJax re-render trigger für dynamischen Content
             if (window.MathJax) {
-                MathJax.typesetPromise([document.getElementById('q-text')]).catch((err) => console.log(err));
+                MathJax.typesetPromise([document.getElementById('q-text')]).then(() => {
+                    // Nach dem MathJax Render die Schriftgröße anpassen
+                    resizeFont();
+                }).catch((err) => console.log(err));
+            } else {
+                resizeFont();
             }
         }
 
         function updateStatsUI() {
             document.getElementById('display-q-count').innerText = stats.questions;
-            // Formatierung der Punkte auf max 1 Nachkommastelle falls nötig
             const displayP = Number.isInteger(stats.points) ? stats.points : stats.points.toFixed(1);
             document.getElementById('display-points').innerText = displayP;
             
@@ -857,28 +857,21 @@
             barP.style.width = pctP + '%';
 
             if (stats.questions >= MIN_QUESTIONS) {
-                barQ.classList.remove('bg-blue-500');
-                barQ.classList.add('bg-green-500');
-                document.getElementById('status-icon-q').classList.add('text-green-500');
+                barQ.classList.remove('bg-blue-500'); barQ.classList.add('bg-green-500');
             }
             if (stats.points >= MIN_POINTS) {
-                barP.classList.remove('bg-orange-500');
-                barP.classList.add('bg-green-500');
-                document.getElementById('status-icon-p').classList.add('text-green-500');
+                barP.classList.remove('bg-orange-500'); barP.classList.add('bg-green-500');
             }
-
             checkFinishCondition();
         }
 
         function checkFinishCondition() {
             const canFinish = (stats.points >= MIN_POINTS && stats.questions >= MIN_QUESTIONS);
-            
             const btnNext = document.getElementById('btn-next');
             const btnFinish = document.getElementById('btn-finish');
 
             if (canFinish) {
-                btnFinish.classList.remove('hidden');
-                btnFinish.classList.add('flex');
+                btnFinish.classList.remove('hidden'); btnFinish.classList.add('flex');
                 btnNext.classList.remove('bg-slate-800', 'hover:bg-slate-900');
                 btnNext.classList.add('bg-slate-400', 'hover:bg-slate-500'); 
             }
@@ -887,40 +880,115 @@
         function finishExam() {
             document.getElementById('exam-section').classList.add('hidden');
             document.getElementById('finish-section').classList.remove('hidden');
-            document.getElementById('final-points').innerText = stats.points;
+            
+            const displayP = Number.isInteger(stats.points) ? stats.points : stats.points.toFixed(1);
+            document.getElementById('final-points').innerText = displayP;
             document.getElementById('final-count').innerText = stats.questions;
             
-            // Render History
+            document.getElementById('print-sum-max').innerText = displayP;
+
             renderHistory();
         }
         
         function renderHistory() {
-            const container = document.getElementById('history-list');
-            container.innerHTML = '';
+            // --- BROWSER ANSICHT ---
+            const screenContainer = document.getElementById('history-list');
+            screenContainer.innerHTML = '';
             
             if(history.length === 0) {
-                container.innerHTML = '<p class="text-slate-400 italic">Keine Fragen gewertet.</p>';
-                return;
+                screenContainer.innerHTML = '<p class="text-slate-400 italic">Keine Fragen gewertet.</p>';
+            } else {
+                history.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = "bg-slate-50 rounded-lg p-4 border border-slate-200";
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded">Frage ${index + 1} (ID: ${item.id})</span>
+                            <span class="text-sm font-semibold text-slate-500">${item.points} Max. Pkt.</span>
+                        </div>
+                        <div class="text-slate-800 mb-0 prose max-w-none text-sm">${parseMarkdown(item.text)}</div>
+                    `;
+                    screenContainer.appendChild(div);
+                });
             }
 
-            history.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = "bg-slate-50 rounded-lg p-4 border border-slate-200";
-                
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded">Frage ${index + 1} (ID: ${item.id})</span>
-                        <span class="text-sm font-semibold text-slate-500">${item.points} Pkt.</span>
-                    </div>
-                    <div class="text-slate-800 mb-0 prose max-w-none text-sm">${parseMarkdown(item.text)}</div>
+            // --- PDF/PRINT ANSICHT ---
+            const printQuestions = document.getElementById('print-questions-tbody');
+            printQuestions.innerHTML = '';
+            if(history.length === 0) {
+                printQuestions.innerHTML = '<tr><td colspan="4" class="text-center p-4 italic">Keine Fragen gestellt.</td></tr>';
+            } else {
+                history.forEach((item, index) => {
+                    printQuestions.innerHTML += `
+                        <tr>
+                            <td class="border border-black p-1 text-center font-bold">${item.id}</td>
+                            <td class="border border-black p-1 print-prose">${parseMarkdown(item.text)}</td>
+                            <td class="border border-black p-1 text-center font-semibold">${item.points}</td>
+                            <td class="border border-black p-1"></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const printSkipped = document.getElementById('print-skipped-list');
+            printSkipped.innerHTML = '';
+            const uniqueSkipped = [...new Map(skippedHistory.map(item => [item.id, item])).values()];
+            if(uniqueSkipped.length === 0) {
+                printSkipped.innerHTML = '<span class="italic text-gray-400 text-[11px]">Keine Fragen übersprungen.</span>';
+            } else {
+                uniqueSkipped.forEach(item => {
+                    printSkipped.innerHTML += `
+                        <div class="mb-1 border-b border-gray-200 pb-1">
+                            <span class="font-bold">ID ${item.id} (${item.points} Pkt):</span> 
+                            <span class="print-prose">${parseMarkdown(item.text)}</span>
+                        </div>`;
+                });
+            }
+
+            // NOTENSCHLÜSSEL BERECHNEN (Aufrunden)
+            const tbodyGrading = document.getElementById('print-grading-tbody');
+            tbodyGrading.innerHTML = '';
+            const grades = [
+                { name: '1 (sehr gut)', pct: 0.93 },
+                { name: '2 (gut)', pct: 0.75 },
+                { name: '3 (befriedigend)', pct: 0.60 },
+                { name: '4 (ausreichend)', pct: 0.40 },
+                { name: '5 (mangelhaft)', pct: 0.20 },
+                { name: '6 (ungenügend)', pct: 0.00 }
+            ];
+
+            grades.forEach(g => {
+                // Punktzahl auf nächste ganze Zahl aufrunden
+                const requiredPoints = Math.ceil(stats.points * g.pct);
+                tbodyGrading.innerHTML += `
+                    <tr>
+                        <td class="border border-black p-1 font-semibold">${g.name}</td>
+                        <td class="border border-black p-1 text-center">${Math.round(g.pct * 100)} %</td>
+                        <td class="border border-black p-1 text-center font-bold">${requiredPoints}</td>
+                    </tr>
                 `;
-                container.appendChild(div);
             });
             
-            // Trigger MathJax for the new elements
             if (window.MathJax) {
-                MathJax.typesetPromise([container]).catch((err) => console.log(err));
+                MathJax.typesetPromise([screenContainer, printQuestions, printSkipped]).catch((err) => console.log(err));
             }
+        }
+
+        function triggerPrint() {
+            // Schülerdaten übernehmen
+            const studentName = document.getElementById('input-student-name').value.trim();
+            const studentClass = document.getElementById('input-student-class').value.trim();
+            
+            document.getElementById('print-student-name').innerText = studentName;
+            document.getElementById('print-student-class').innerText = studentClass;
+
+            // Datum und Uhrzeit des Drucks generieren
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('de-DE');
+            const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('print-datetime').innerText = `${dateStr}, ${timeStr} Uhr`;
+            
+            window.print();
         }
 
         function resetApp() {

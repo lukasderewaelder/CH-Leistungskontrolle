@@ -206,7 +206,7 @@
 
                 <div class="bg-white p-3 md:p-4 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden flex justify-between items-center">
                     <div>
-                        <p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Erreichte max. Punkte</p>
+                        <p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Mögliche Punkte gesamt</p>
                         <p class="text-xl md:text-2xl font-bold text-slate-800"><span id="display-points">0</span> <span class="text-sm font-normal text-slate-400">/ 12 (Min)</span></p>
                     </div>
                      <div class="absolute bottom-0 left-0 h-1 bg-slate-100 w-full">
@@ -260,22 +260,24 @@
             <div class="max-w-6xl w-full mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
                 <!-- Left Column: Summary Card -->
-                <div class="lg:col-span-4 lg:sticky lg:top-4 bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center">
-                    <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="lg:col-span-4 lg:sticky lg:top-4 bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center flex flex-col">
+                    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
-                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Leistungskontrolle beendet</h2>
-                    <p class="text-slate-500 mb-6">Alle Anforderungen wurden erfüllt.</p>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Leistungskontrolle beendet</h2>
                     
-                    <div class="bg-slate-50 rounded-lg p-6 mb-6 text-left">
-                        <div class="flex justify-between mb-2 border-b border-slate-200 pb-2">
-                            <span class="text-slate-600">Gesamtpunkte (Max):</span>
-                            <span class="font-bold text-slate-800 text-xl" id="final-points">0</span>
+                    <!-- Grading Block (Interaktiv) -->
+                    <div class="bg-indigo-50 rounded-xl p-5 mb-6 text-left border border-indigo-100 shadow-inner">
+                        <h3 class="text-sm font-bold text-indigo-800 uppercase tracking-wider mb-4 border-b border-indigo-200 pb-2">Bewertung</h3>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-slate-600 font-medium">Erreichte Punkte:</span>
+                            <span class="font-bold text-slate-800 text-xl"><span id="screen-total-achieved">0</span> <span class="text-sm font-normal text-slate-500">/ <span id="screen-max-points">0</span></span></span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-600">Gestellte Fragen:</span>
-                            <span class="font-bold text-slate-800 text-xl" id="final-count">0</span>
+                        <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-indigo-100 shadow-sm mt-4">
+                            <span class="text-indigo-900 font-bold">Note:</span>
+                            <span class="font-black text-indigo-700 text-xl" id="screen-final-grade">-</span>
                         </div>
+                        <p class="text-[10px] text-indigo-400 mt-3 italic leading-tight">Gebe rechts in der Liste die Punkte ein. Die Note berechnet sich automatisch.</p>
                     </div>
 
                     <!-- Schülereingabe -->
@@ -287,21 +289,21 @@
                         <input type="text" id="input-student-class" placeholder="z.B. Bio-LK 12" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border-slate-300">
                     </div>
 
-                    <button onclick="triggerPrint()" class="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-900 mb-3 flex justify-center items-center gap-2 shadow-md">
+                    <button onclick="triggerPrint()" class="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-900 mb-3 flex justify-center items-center gap-2 shadow-md transition-transform active:scale-95">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                         Protokoll als PDF drucken
                     </button>
 
-                    <button onclick="location.reload()" class="w-full bg-indigo-100 text-indigo-700 py-3 rounded-lg font-semibold hover:bg-indigo-200">
+                    <button onclick="location.reload()" class="w-full bg-indigo-100 text-indigo-700 py-3 rounded-lg font-semibold hover:bg-indigo-200 transition-colors">
                         Neue Leistungskontrolle starten
                     </button>
                 </div>
 
-                <!-- Right Column: History List -->
+                <!-- Right Column: History List (Interactive) -->
                 <div class="lg:col-span-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
                      <h3 class="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2 pb-4 border-b border-slate-100">
-                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        Ansicht der gestellten Fragen
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Punktevergabe
                     </h3>
                     <div id="history-list" class="space-y-4">
                         <!-- History Items injected via JS -->
@@ -343,6 +345,7 @@
                 </td>
                 <td class="pb-2 align-bottom border-none font-bold text-base relative">
                     <span class="mr-2">Erreichte Punkte:</span>
+                    <span id="print-student-points" class="font-bold text-lg absolute bottom-2 left-40"></span>
                     <div class="border-b-2 border-black mt-2 w-8/12 inline-block h-4"></div>
                 </td>
             </tr>
@@ -350,6 +353,7 @@
                 <td class="pb-2 align-bottom border-none relative"></td>
                 <td class="pb-2 align-bottom border-none font-bold text-base relative pt-4">
                     <span class="mr-2">Note:</span>
+                    <span id="print-student-grade" class="font-bold text-xl absolute bottom-2 left-16"></span>
                     <div class="border-b-2 border-black mt-2 w-10/12 inline-block h-4"></div>
                 </td>
             </tr>
@@ -363,16 +367,16 @@
                     <th class="border border-black p-1 w-10 text-center">ID</th>
                     <th class="border border-black p-1">Aufgabenstellung</th>
                     <th class="border border-black p-1 w-16 text-center leading-tight">Max.<br>Pkt.</th>
-                    <th class="border border-black p-1 w-20 text-center text-gray-500 italic">Punkte<br>(manuell)</th>
+                    <th class="border border-black p-1 w-20 text-center font-bold">Erreicht</th>
                 </tr>
             </thead>
             <tbody id="print-questions-tbody">
             </tbody>
             <tfoot>
                 <tr class="bg-gray-50 font-bold">
-                    <td colspan="2" class="border border-black p-1 text-right uppercase">Summe Maximalpunkte:</td>
+                    <td colspan="2" class="border border-black p-1 text-right uppercase">Summe:</td>
                     <td id="print-sum-max" class="border border-black p-1 text-center text-sm">0</td>
-                    <td class="border border-black p-1 bg-white"></td>
+                    <td id="print-sum-achieved" class="border border-black p-1 text-center text-sm font-bold bg-white"></td>
                 </tr>
             </tfoot>
         </table>
@@ -447,7 +451,7 @@
             textEl.style.fontSize = '20px';
             
             let min = 20;
-            let max = 150; // Maximale Schriftgröße deutlich erhöht (vorher 80)
+            let max = 150; // Maximale Schriftgröße deutlich erhöht
             let best = min;
             
             // Binäre Suche für die optimale Schriftgröße, damit es genau in den Container passt
@@ -896,14 +900,60 @@
             document.getElementById('finish-section').classList.remove('hidden');
             
             const displayP = Number.isInteger(stats.points) ? stats.points : stats.points.toFixed(1);
-            document.getElementById('final-points').innerText = displayP;
-            document.getElementById('final-count').innerText = stats.questions;
-            
+            document.getElementById('screen-max-points').innerText = displayP;
             document.getElementById('print-sum-max').innerText = displayP;
 
             renderHistory();
         }
         
+        // BERECHNET NOTE UND SUMME DYNAMISCH BEIM TIPPEN
+        function calculateFinalScore() {
+            const inputs = document.querySelectorAll('.achieved-input');
+            let totalAchieved = 0;
+            let hasInput = false;
+
+            inputs.forEach((input, index) => {
+                if (input.value !== "") {
+                    hasInput = true;
+                    totalAchieved += parseFloat(input.value) || 0;
+                }
+                // Update corresponding Print Table field
+                const printEl = document.getElementById(`print-pts-${index}`);
+                if (printEl) printEl.innerText = input.value;
+            });
+
+            const maxPoints = stats.points;
+            let grade = "";
+
+            if (hasInput) {
+                // Formatting points
+                const displayTotal = Number.isInteger(totalAchieved) ? totalAchieved : totalAchieved.toFixed(1);
+                
+                document.getElementById('screen-total-achieved').innerText = displayTotal;
+                document.getElementById('print-sum-achieved').innerText = displayTotal;
+                document.getElementById('print-student-points').innerText = displayTotal;
+
+                grade = "6 (ungenügend)";
+                if (maxPoints > 0) {
+                    if (totalAchieved >= Math.ceil(maxPoints * 0.93)) grade = "1 (sehr gut)";
+                    else if (totalAchieved >= Math.ceil(maxPoints * 0.75)) grade = "2 (gut)";
+                    else if (totalAchieved >= Math.ceil(maxPoints * 0.60)) grade = "3 (befriedigend)";
+                    else if (totalAchieved >= Math.ceil(maxPoints * 0.40)) grade = "4 (ausreichend)";
+                    else if (totalAchieved >= Math.ceil(maxPoints * 0.20)) grade = "5 (mangelhaft)";
+                }
+                
+                document.getElementById('screen-final-grade').innerText = grade;
+                document.getElementById('print-student-grade').innerText = grade;
+            } else {
+                // Zurücksetzen wenn alles leer ist
+                document.getElementById('screen-total-achieved').innerText = "0";
+                document.getElementById('screen-final-grade').innerText = "-";
+                document.getElementById('print-sum-achieved').innerText = "";
+                document.getElementById('print-student-points').innerText = "";
+                document.getElementById('print-student-grade').innerText = "";
+            }
+        }
+
         function renderHistory() {
             // --- BROWSER ANSICHT ---
             const screenContainer = document.getElementById('history-list');
@@ -914,11 +964,17 @@
             } else {
                 history.forEach((item, index) => {
                     const div = document.createElement('div');
-                    div.className = "bg-slate-50 rounded-lg p-4 border border-slate-200";
+                    div.className = "bg-slate-50 rounded-lg p-5 border border-slate-200";
                     div.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
+                        <div class="flex justify-between items-center mb-3">
                             <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded">Frage ${index + 1} (ID: ${item.id})</span>
-                            <span class="text-sm font-semibold text-slate-500">${item.points} Max. Pkt.</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-semibold text-slate-500 w-16 text-right">${item.points} Max.</span>
+                                <div class="flex items-center gap-2 bg-white px-2 py-1 rounded border border-indigo-100 shadow-sm">
+                                    <input type="number" min="0" max="${item.points}" step="0.5" class="achieved-input w-16 p-1 text-center border border-slate-300 rounded font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0" oninput="calculateFinalScore()">
+                                    <span class="text-xs text-slate-500 font-medium">erreicht</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="text-slate-800 mb-0 prose max-w-none text-sm">${parseMarkdown(item.text)}</div>
                     `;
@@ -938,7 +994,7 @@
                             <td class="border border-black p-1 text-center font-bold">${item.id}</td>
                             <td class="border border-black p-1 print-prose">${parseMarkdown(item.text)}</td>
                             <td class="border border-black p-1 text-center font-semibold">${item.points}</td>
-                            <td class="border border-black p-1"></td>
+                            <td class="border border-black p-1 text-center font-bold" id="print-pts-${index}"></td>
                         </tr>
                     `;
                 });
@@ -983,12 +1039,18 @@
                 `;
             });
             
+            // Initial call to ensure everything is zeroed/empty correctly
+            calculateFinalScore();
+
             if (window.MathJax) {
                 MathJax.typesetPromise([screenContainer, printQuestions, printSkipped]).catch((err) => console.log(err));
             }
         }
 
         function triggerPrint() {
+            // Sichergehen, dass alle Scores final berechnet sind
+            calculateFinalScore();
+
             // Schülerdaten übernehmen
             const studentName = document.getElementById('input-student-name').value.trim();
             const studentClass = document.getElementById('input-student-class').value.trim();

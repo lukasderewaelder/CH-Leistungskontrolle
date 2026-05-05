@@ -57,6 +57,9 @@
             th, td { border: 1px solid #000; padding: 4px 6px; text-align: left; }
             th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
             
+            /* Boxen Formatierung beim Druck */
+            .print-box { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
             /* Komprimiert Markdown Listen im Print */
             .print-prose p { display: inline; margin: 0; padding: 0; }
             .print-prose ul { margin: 0; padding-left: 1rem; }
@@ -323,41 +326,43 @@
             <div class="text-xs text-gray-700">Export: <span id="print-datetime" class="font-semibold"></span></div>
         </div>
 
-        <!-- Student Details -->
-        <table class="w-full mb-4 text-sm border-none" style="margin-bottom: 20px;">
-            <tr>
-                <td class="pb-4 w-1/2 align-bottom border-none relative">
-                    <span class="mr-2">Name, Vorname:</span>
-                    <span id="print-student-name" class="font-semibold text-base absolute bottom-4 left-32"></span>
-                    <div class="border-b border-black mt-2 w-11/12 h-4"></div>
-                </td>
-                <td class="pb-4 w-1/2 align-bottom border-none relative">
-                    <span class="mr-2">Klasse / Kurs:</span>
-                    <span id="print-student-class" class="font-semibold text-base absolute bottom-4 left-24"></span>
-                    <div class="border-b border-black mt-2 w-11/12 h-4"></div>
-                </td>
-            </tr>
-            <tr>
-                <td class="pb-2 align-bottom border-none relative">
-                    <span class="mr-2">Datum:</span>
-                    <span id="print-student-date" class="font-semibold text-base absolute bottom-2 left-16"></span>
-                    <div class="border-b border-black mt-2 w-11/12 h-4"></div>
-                </td>
-                <td class="pb-2 align-bottom border-none font-bold text-base relative">
-                    <span class="mr-2">Erreichte Punkte:</span>
-                    <span id="print-student-points" class="font-bold text-lg absolute bottom-2 left-40"></span>
-                    <div class="border-b-2 border-black mt-2 w-8/12 inline-block h-4"></div>
-                </td>
-            </tr>
-            <tr>
-                <td class="pb-2 align-bottom border-none relative"></td>
-                <td class="pb-2 align-bottom border-none font-bold text-base relative pt-4">
-                    <span class="mr-2">Note:</span>
-                    <span id="print-student-grade" class="font-bold text-xl absolute bottom-2 left-16"></span>
-                    <div class="border-b-2 border-black mt-2 w-10/12 inline-block h-4"></div>
-                </td>
-            </tr>
-        </table>
+        <!-- Student Details & Grades Container -->
+        <div class="flex justify-between items-start mb-6">
+            
+            <!-- Linke Seite: Formular-Linien -->
+            <div class="w-3/5 pr-10 flex flex-col gap-5 mt-2 text-sm">
+                <div class="flex items-end">
+                    <span class="mr-3 whitespace-nowrap font-medium pb-1">Name, Vorname:</span>
+                    <div class="flex-grow border-b border-black flex items-end justify-center pb-1 h-6">
+                        <span id="print-student-name" class="font-bold text-base"></span>
+                    </div>
+                </div>
+                <div class="flex items-end">
+                    <span class="mr-3 whitespace-nowrap font-medium pb-1">Klasse / Kurs:</span>
+                    <div class="flex-grow border-b border-black flex items-end justify-center pb-1 h-6">
+                        <span id="print-student-class" class="font-bold text-base"></span>
+                    </div>
+                </div>
+                <div class="flex items-end">
+                    <span class="mr-3 whitespace-nowrap font-medium pb-1">Datum:</span>
+                    <div class="flex-grow border-b border-black flex items-end justify-center pb-1 h-6">
+                        <span id="print-student-date" class="font-bold text-base"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rechte Seite: Boxen für Resultate -->
+            <div class="w-2/5 flex gap-4 justify-end">
+                <div class="flex-1 border-2 border-black bg-gray-100 rounded-lg p-3 flex flex-col items-center justify-center print-box min-h-[80px]">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-2">Gesamtpunktzahl</span>
+                    <span id="print-student-points" class="font-bold text-2xl text-center"></span>
+                </div>
+                <div class="flex-1 border-2 border-black bg-gray-100 rounded-lg p-3 flex flex-col items-center justify-center print-box min-h-[80px]">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-2">Note</span>
+                    <span id="print-student-grade" class="font-bold text-lg text-center leading-tight"></span>
+                </div>
+            </div>
+        </div>
 
         <!-- Exam Questions Table -->
         <h2 class="text-base font-bold mb-1">Gestellte Aufgaben</h2>

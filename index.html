@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mündliche Leistungskontrolle</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- MathJax für Formeln -->
     <script>
         window.MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
@@ -34,7 +33,6 @@
         .cursor-grab { cursor: grab; }
         .cursor-grab:active { cursor: grabbing; }
 
-        /* PRINT STYLES FÜR EXAKT EINE A4 SEITE */
         @media print {
             @page { size: A4 portrait; margin: 10mm; }
             body { 
@@ -71,7 +69,6 @@
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen w-screen flex flex-col relative">
 
-    <!-- HEADER -->
     <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm z-10 print:hidden flex-shrink-0">
         <div class="flex items-center gap-2">
             <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
@@ -80,7 +77,6 @@
         <button onclick="resetApp()" class="text-sm text-red-500 hover:text-red-700 font-medium">Reset / Neue Session</button>
     </header>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="flex-grow p-4 md:p-6 overflow-y-auto relative custom-scrollbar print:hidden flex flex-col">
         
         <!-- SECTION 1: SETUP & CONFIG -->
@@ -121,7 +117,6 @@
                 </div>
             </div>
 
-            <!-- Settings Card -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 opacity-50 pointer-events-none transition-opacity" id="settings-card">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                     <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
@@ -154,7 +149,6 @@
             </div>
         </div>
 
-        <!-- SECTION 1.5: EDITOR MODE (Hidden) -->
         <div id="editor-section" class="hidden max-w-7xl w-full mx-auto h-full flex flex-col fade-in flex-grow">
             <div class="bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col flex-grow overflow-hidden">
                 <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 flex-shrink-0">
@@ -192,7 +186,6 @@
         </div>
 
 
-        <!-- SECTION 2: EXAM MODE (Responsive Full Height) -->
         <div id="exam-section" class="hidden w-full h-full flex flex-col fade-in">
             
             <!-- Progress Dashboard (Top Bar) -->
@@ -231,7 +224,6 @@
                 
                 <!-- DYNAMIC TEXT CONTAINER -->
                 <div class="flex-grow w-full flex flex-col items-center justify-center overflow-hidden relative" id="q-text-wrapper">
-                    <!-- Das q-text Element wird via JS dynamisch skaliert -->
                     <div id="q-text" class="text-center font-medium leading-relaxed prose max-w-none w-full text-slate-800" style="transition: font-size 0.05s ease-out;">
                         Frage wird geladen...
                     </div>
@@ -258,7 +250,6 @@
 
         </div>
 
-        <!-- FINISH SECTION (Screen View) -->
         <div id="finish-section" class="hidden h-full flex flex-col items-center fade-in pb-10 overflow-y-auto w-full">
             <div class="max-w-6xl w-full mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
@@ -432,7 +423,6 @@
         // --- INIT ---
         document.addEventListener('DOMContentLoaded', () => {
             loadFromStorage();
-            // Resize Event Listener für dynamische Schriftgröße
             window.addEventListener('resize', resizeFont);
         });
 
@@ -452,24 +442,19 @@
             const textEl = document.getElementById('q-text');
             if (!wrapper || !textEl || textEl.innerHTML === '' || document.getElementById('exam-section').classList.contains('hidden')) return;
 
-            // Reset bounds for measurement
             textEl.style.fontSize = '20px';
-            
             let min = 20;
-            let max = 150; // Maximale Schriftgröße deutlich erhöht
+            let max = 150; 
             let best = min;
             
-            // Binäre Suche für die optimale Schriftgröße, damit es genau in den Container passt
             while (min <= max) {
                 let mid = Math.floor((min + max) / 2);
                 textEl.style.fontSize = mid + 'px';
-                
-                // Prüfen, ob der Text den Container sprengt (mit kleinem Puffer)
                 if (textEl.scrollHeight <= wrapper.clientHeight - 20 && textEl.scrollWidth <= wrapper.clientWidth - 20) {
                     best = mid;
-                    min = mid + 1; // Kann größer sein?
+                    min = mid + 1; 
                 } else {
-                    max = mid - 1; // Zu groß, muss kleiner sein
+                    max = mid - 1; 
                 }
             }
             textEl.style.fontSize = best + 'px';
@@ -809,55 +794,65 @@
                 return;
             }
 
-            // Neues System: Einmal komplett (echter Random) mischen
+            // Einmal komplett (echter Random) mischen
             shuffleArray(sessionQuestions);
 
+            stats = { points: 0, questions: 0 }; 
             history = []; 
             skippedHistory = []; 
 
             document.getElementById('setup-section').classList.add('hidden');
             document.getElementById('exam-section').classList.remove('hidden');
 
-            nextQuestion(true);
+            nextQuestion();
         }
 
-        function nextQuestion(isFirst = false) {
-            if (!isFirst && currentQuestion) {
-                stats.points += currentQuestion.points;
-                stats.questions++;
-                history.push(currentQuestion); 
-                updateStatsUI();
-            }
-
+        function nextQuestion() {
             if (sessionQuestions.length === 0) {
-                alert("Alle Fragen aus diesem Bereich wurden gestellt!");
+                alert("Alle verbleibenden Fragen aus diesem Bereich wurden gestellt!");
                 finishExam();
                 return;
             }
-            checkFinishCondition();
 
-            // Einfach das letzte Element nehmen (Array wurde ja vorher gemischt)
+            // Neue Frage ziehen
             currentQuestion = sessionQuestions.pop();
+
+            // FIX: SOFORT als gestellt werten, damit sie in Auswertung & Fortschrittsbalken einfließt
+            // Selbst wenn als nächstes "Beenden" gedrückt wird, ist diese Frage dann schon gesichert.
+            stats.points += currentQuestion.points;
+            stats.questions++;
+            history.push(currentQuestion); 
+            
+            updateStatsUI();
             renderQuestion();
         }
 
         function skipQuestion() {
             if (currentQuestion) {
+                // Da sie in nextQuestion() sofort hinzugefügt wurde, müssen wir sie beim Skip wieder abziehen
+                stats.points -= currentQuestion.points;
+                stats.questions--;
+                
+                // Sauber aus der Historie entfernen
+                const index = history.findIndex(q => q.id === currentQuestion.id);
+                if (index > -1) history.splice(index, 1);
+
                 skippedHistory.push(currentQuestion); 
-                sessionQuestions.unshift(currentQuestion); // An den Anfang des Arrays zurücklegen
+                sessionQuestions.unshift(currentQuestion); // Zurück in den Pool
             }
-            nextQuestion(true);
+            nextQuestion();
         }
 
         function renderQuestion() {
             document.getElementById('q-id').innerText = currentQuestion.id;
             document.getElementById('q-text').innerHTML = parseMarkdown(currentQuestion.text);
             document.getElementById('q-points').innerText = currentQuestion.points;
-            document.getElementById('pool-remaining').innerText = sessionQuestions.length + 1;
+            
+            // Da die aktuelle Frage schon gepoppt ist, zeigt length die wirklich noch verdeckten an.
+            document.getElementById('pool-remaining').innerText = sessionQuestions.length;
 
             if (window.MathJax) {
                 MathJax.typesetPromise([document.getElementById('q-text')]).then(() => {
-                    // Nach dem MathJax Render die Schriftgröße anpassen
                     resizeFont();
                 }).catch((err) => console.log(err));
             } else {
@@ -901,6 +896,14 @@
         }
 
         function finishExam() {
+            // Failsafe: Falls die aktuell offene Frage aus irgendeinem Grund noch nicht im Verlauf ist
+            if (currentQuestion && !history.some(q => q.id === currentQuestion.id)) {
+                stats.points += currentQuestion.points;
+                stats.questions++;
+                history.push(currentQuestion);
+                updateStatsUI();
+            }
+
             document.getElementById('exam-section').classList.add('hidden');
             document.getElementById('finish-section').classList.remove('hidden');
             
@@ -922,7 +925,6 @@
                     hasInput = true;
                     totalAchieved += parseFloat(input.value) || 0;
                 }
-                // Update corresponding Print Table field
                 const printEl = document.getElementById(`print-pts-${index}`);
                 if (printEl) printEl.innerText = input.value;
             });
@@ -931,7 +933,6 @@
             let grade = "";
 
             if (hasInput) {
-                // Formatting points
                 const displayTotal = Number.isInteger(totalAchieved) ? totalAchieved : totalAchieved.toFixed(1);
                 
                 document.getElementById('screen-total-achieved').innerText = displayTotal;
@@ -950,7 +951,6 @@
                 document.getElementById('screen-final-grade').innerText = grade;
                 document.getElementById('print-student-grade').innerText = grade;
             } else {
-                // Zurücksetzen wenn alles leer ist
                 document.getElementById('screen-total-achieved').innerText = "0";
                 document.getElementById('screen-final-grade').innerText = "-";
                 document.getElementById('print-sum-achieved').innerText = "";
@@ -1033,7 +1033,6 @@
             ];
 
             grades.forEach(g => {
-                // Punktzahl auf nächste ganze Zahl aufrunden
                 const requiredPoints = Math.ceil(stats.points * g.pct);
                 tbodyGrading.innerHTML += `
                     <tr>
@@ -1044,7 +1043,6 @@
                 `;
             });
             
-            // Initial call to ensure everything is zeroed/empty correctly
             calculateFinalScore();
 
             if (window.MathJax) {
@@ -1053,23 +1051,18 @@
         }
 
         function triggerPrint() {
-            // Sichergehen, dass alle Scores final berechnet sind
             calculateFinalScore();
 
-            // Schülerdaten übernehmen
             const studentName = document.getElementById('input-student-name').value.trim();
             const studentClass = document.getElementById('input-student-class').value.trim();
             
             document.getElementById('print-student-name').innerText = studentName;
             document.getElementById('print-student-class').innerText = studentClass;
 
-            // Datum und Uhrzeit des Drucks generieren
             const now = new Date();
             const dateStr = now.toLocaleDateString('de-DE');
             const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             document.getElementById('print-datetime').innerText = `${dateStr}, ${timeStr} Uhr`;
-            
-            // Datum in die dafür vorgesehene Zeile eintragen
             document.getElementById('print-student-date').innerText = dateStr;
             
             window.print();
